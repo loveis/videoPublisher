@@ -1,0 +1,58 @@
+# MediaMTX 기본 설정 예시 — 처음 실행 시 mediamtx.yml 로 복사되며, 이후에는 관리 화면(설정 탭)에서 수정합니다.
+# 전체 항목 설명: https://github.com/bluenviron/mediamtx/blob/main/mediamtx.yml
+logLevel: info
+
+# 관리 서버가 사용하는 API — 관리 화면에서 변경할 수 없습니다.
+api: yes
+apiAddress: 127.0.0.1:9997
+
+# RTSP — 카메라 영상을 FFmpeg 가 RTSP 로 publish 하므로 끌 수 없습니다.
+rtsp: yes
+rtspAddress: :8554
+rtspTransports: [udp, multicast, tcp]
+
+rtmp: yes
+rtmpAddress: :1935
+
+hls: yes
+hlsAddress: :8888
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+
+srt: yes
+srtAddress: :8890
+
+moq: no
+
+# 녹화 파일 재생/다운로드 서버
+playback: yes
+playbackAddress: :9996
+
+metrics: no
+metricsAddress: 127.0.0.1:9998
+pprof: no
+pprofAddress: 127.0.0.1:9999
+
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+  - user: any
+    pass:
+    ips: ['127.0.0.1', '::1']
+    permissions:
+      - action: api
+      - action: metrics
+      - action: pprof
+
+pathDefaults:
+  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+
+paths:
+  all_others:

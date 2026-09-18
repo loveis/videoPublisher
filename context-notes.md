@@ -40,3 +40,20 @@
   떠서 bind 오류가 났음. `src/env.js` 에서 `process.loadEnvFile()` 로 프로젝트 루트 .env 를 직접 로딩하고 server.js 첫 import 로 둠.
   ESM 은 import 를 먼저 평가하므로 server.js 본문에서 로딩하면 mediamtx.js 의 포트 상수가 먼저 계산돼 버림 → 별도 모듈 필요.
   요구 Node 버전은 20.12+ 로 완화.
+
+## 2026-09-18 2차: MediaMTX 기능 표출 + 설정 UI (사용자 결정)
+- 설정 범위: 주요 항목(한글 설명 폼) + 고급(전체 항목 자동 폼). 저장: API 즉시 반영 + mediamtx.yml 기록.
+  포트는 .env 에서 제거하고 mediamtx.yml(=UI)로 이관. 표출: 전체 프로토콜 URL, 세션+킥, 녹화/재생, 서버 정보/메트릭.
+
+### MediaMTX v1.21 실측 (테스트 패턴으로 확인)
+- 설정 항목: global 120개, pathDefaults 92개(이 중 rpiCamera* 는 라즈베리파이 전용 → UI 에서 숨김).
+- reader type: rtspSession, rtmpConn, srtConn, hlsSession(HLS 도 시청자별 세션이 잡힘), webRTCSession.
+- 세션 API: rtspsessions, rtmpconns, srtconns, webrtcsessions, hlssessions. rtspssessions/rtmpsconns 는 해당 암호화가 켜져야 생김(꺼져 있으면 404).
+- 바이트 필드는 inboundBytes/outboundBytes (bytesReceived/bytesSent 는 구 필드).
+- 잘못된 값 patch → 400 + 에러 메시지(검증됨). 알 수 없는 키도 400.
+- **이미 사용 중인 포트로 patch 하면 200 을 돌려준 뒤 MediaMTX 가 통째로 종료됨.** RTSPS 를 인증서 없이 켜는 것도 같은 부류.
+  → patch 후 1.5초 뒤 생존 확인, 죽었으면 yml 에 쓰지 않고(이전 설정 유지) 감시 로직이 재시작. 관리 서버는 MediaMTX 가 죽어도 종료하지 않음.
+- **MediaMTX 는 yml 파일 변경을 감지해 전체 재로딩** → API 로만 추가한 경로 설정(스트림별 녹화 등)은 yml 저장 시 사라짐.
+  → 스트림별 경로 설정도 yml `paths.<name>` 에 함께 기록하고, 송출 중지 시 제거.
+- 송출 중 경로 설정 추가/변경(record on/off)은 publisher 연결을 끊지 않음.
+- 보호 항목: api, apiAddress(관리 서버가 사용), rtsp 와 rtspEncryption=strict(FFmpeg 가 RTSP 로 publish) → UI 에서 변경 불가.

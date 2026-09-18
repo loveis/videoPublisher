@@ -1,11 +1,10 @@
 // 송출(스트림)별 FFmpeg 프로세스를 시작/중지하고 설정과 상태를 보관
 import { spawn } from 'node:child_process';
-import { RTSP_PORT } from './mediamtx.js';
 
 const streams = new Map();
 
 // WebRTC 브라우저 호환을 위해 H.264 baseline(B-frame 없음), GOP 2초로 인코딩해 MediaMTX 에 RTSP publish.
-export function buildFfmpegArgs({ name, camera, width, height, fps, bitrate }) {
+export function buildFfmpegArgs({ camera, width, height, fps, bitrate }, publishUrl) {
   return [
     '-hide_banner', '-loglevel', 'error',
     '-f', 'dshow', '-rtbufsize', '256M',
@@ -16,12 +15,12 @@ export function buildFfmpegArgs({ name, camera, width, height, fps, bitrate }) {
     '-profile:v', 'baseline', '-pix_fmt', 'yuv420p',
     '-b:v', `${bitrate}k`, '-maxrate', `${bitrate}k`, '-bufsize', `${bitrate * 2}k`,
     '-g', String(fps * 2),
-    '-f', 'rtsp', '-rtsp_transport', 'tcp', `rtsp://127.0.0.1:${RTSP_PORT}/${name}`,
+    '-f', 'rtsp', '-rtsp_transport', 'tcp', publishUrl,
   ];
 }
 
-export function startStream(config) {
-  const proc = spawn('ffmpeg', buildFfmpegArgs(config), { stdio: ['ignore', 'ignore', 'pipe'] });
+export function startStream(config, publishUrl) {
+  const proc = spawn('ffmpeg', buildFfmpegArgs(config, publishUrl), { stdio: ['ignore', 'ignore', 'pipe'] });
   const stream = { ...config, startedAt: Date.now(), error: null, stopped: false, proc };
   let stderr = '';
   proc.stderr.setEncoding('utf8');
@@ -41,6 +40,10 @@ export function stopStream(name) {
   stream.proc?.kill();
   streams.delete(name);
   return true;
+}
+
+export function updateStream(name, fields) {
+  Object.assign(streams.get(name), fields);
 }
 
 export function stopAll() {
