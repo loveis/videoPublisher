@@ -1,57 +1,21 @@
-// 관리 화면 동작: 로그인, 카메라/옵션 선택, 송출 시작·중지, 송출 목록과 접속자 수 주기적 갱신
+// 송출 탭: 카메라/해상도/프레임 선택, 송출 시작·중지, 녹화 on/off, 프로토콜별 URL 과 접속자 수
+import { api, escapeHtml, setHtml, showMediaMtxStatus, PROTOCOL_LABEL } from './api.js';
+
 const $ = (sel) => document.querySelector(sel);
 const form = $('#stream-form');
-const PROTOCOL_LABEL = { rtsp: 'RTSP', webrtc: 'WebRTC' };
+const DEFAULT_PROTOCOLS = ['rtsp', 'webrtc'];
 let cameraOptions = [];
-let pollTimer = null;
+let available = [];
 
-async function api(method, url, body) {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && url !== '/api/login') {
-    showLogin();
-    throw new Error(data.error);
-  }
-  if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-  return data;
+export function init() {
+  form.camera.addEventListener('change', loadOptions);
+  form.resolution.addEventListener('change', updateFps);
+  $('#refresh-cameras').addEventListener('click', loadCameras);
+  form.addEventListener('submit', submit);
+  $('#streams').addEventListener('click', onListClick);
+  $('#streams').addEventListener('change', onListChange);
+  loadCameras();
 }
-
-function showLogin() {
-  clearInterval(pollTimer);
-  $('#main-view').hidden = true;
-  $('#login-view').hidden = false;
-}
-
-async function showMain() {
-  $('#login-view').hidden = true;
-  $('#main-view').hidden = false;
-  await loadCameras();
-  await refreshStreams();
-  clearInterval(pollTimer);
-  pollTimer = setInterval(refreshStreams, 2000);
-}
-
-$('#login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const f = e.target;
-  $('#login-error').textContent = '';
-  try {
-    await api('POST', '/api/login', { username: f.username.value, password: f.password.value });
-    f.reset();
-    await showMain();
-  } catch (err) {
-    $('#login-error').textContent = err.message;
-  }
-});
-
-$('#logout').addEventListener('click', async () => {
-  await api('POST', '/api/logout');
-  showLogin();
-});
 
 // ---- 카메라 / 옵션 ----
 async function loadCameras() {
@@ -79,11 +43,21 @@ function updateFps() {
   form.fps.innerHTML = option ? option.fps.map((f) => `<option>${f}</option>`).join('') : '';
 }
 
-form.camera.addEventListener('change', loadOptions);
-form.resolution.addEventListener('change', updateFps);
-$('#refresh-cameras').addEventListener('click', loadCameras);
+// MediaMTX 에서 켜진 프로토콜만 선택지로 보여 준다. 목록이 바뀔 때만 다시 그려 사용자의 체크 상태를 유지.
+function renderProtocolChecks(list) {
+  if (list.join() === available.join()) return;
+  const checked = new Set([...form.querySelectorAll('input[name=protocols]:checked')].map((i) => i.value));
+  const initial = available.length === 0;
+  available = list;
+  $('#protocol-checks').innerHTML = list
+    .map((p) => {
+      const on = initial ? DEFAULT_PROTOCOLS.includes(p) : checked.has(p);
+      return `<label class="check"><input type="checkbox" name="protocols" value="${p}" ${on ? 'checked' : ''}> ${PROTOCOL_LABEL[p]}</label>`;
+    })
+    .join('');
+}
 
-form.addEventListener('submit', async (e) => {
+async function submit(e) {
   e.preventDefault();
   const option = cameraOptions[form.resolution.value];
   const protocols = [...form.querySelectorAll('input[name=protocols]:checked')].map((i) => i.value);
@@ -98,41 +72,41 @@ form.addEventListener('submit', async (e) => {
       fps: Number(form.fps.value),
       bitrate: Number(form.bitrate.value),
       protocols,
+      record: form.record.checked,
     });
     form.streamName.value = '';
-    await refreshStreams();
+    await refresh();
   } catch (err) {
     $('#stream-error').textContent = err.message;
   } finally {
     $('#start-btn').disabled = false;
   }
-});
+}
 
 // ---- 송출 목록 ----
-async function refreshStreams() {
-  const streams = await api('GET', '/api/streams');
-  const box = $('#streams');
-  const html = streams.length
-    ? streams.map(renderStream).join('')
-    : '<p class="muted">송출 중인 스트림이 없습니다.</p>';
-  // 변경이 없으면 다시 그리지 않아 URL 선택/복사 표시가 폴링마다 풀리지 않게 한다.
-  if (box.dataset.html !== html) {
-    box.innerHTML = html;
-    box.dataset.html = html;
-  }
-  if (!form.streamName.value) form.streamName.placeholder = nextStreamName(streams);
+export async function refresh() {
+  const data = await api('GET', '/api/streams');
+  showMediaMtxStatus(data.mediamtx);
+  renderProtocolChecks(data.available);
+  setHtml(
+    $('#streams'),
+    data.streams.length ? data.streams.map(renderStream).join('') : '<p class="muted">송출 중인 스트림이 없습니다.</p>',
+  );
+  if (!form.streamName.value) form.streamName.placeholder = nextStreamName(data.streams);
 }
 
 function renderStream(s) {
   const [cls, label] = !s.running ? ['error', '오류'] : s.ready ? ['live', '송출 중'] : ['starting', '연결 중'];
+  // 송출 시작 후 설정에서 꺼진 프로토콜은 URL 이 없으므로 표시하지 않는다.
   const urls = s.protocols
+    .filter((p) => s.urls[p])
     .map(
       (p) => `
       <div class="url-row">
         <span class="proto">${PROTOCOL_LABEL[p]}</span>
         <input readonly value="${escapeHtml(s.urls[p])}">
         <button type="button" data-copy="${escapeHtml(s.urls[p])}">복사</button>
-        <span class="viewers">접속 <b>${s.viewers[p]}</b>명</span>
+        <span class="viewers">접속 <b>${s.viewers[p] ?? 0}</b>명</span>
       </div>`,
     )
     .join('');
@@ -141,7 +115,9 @@ function renderStream(s) {
       <div class="stream-head">
         <strong>${escapeHtml(s.name)}</strong>
         <span class="badge ${cls}">${label}</span>
+        ${s.record ? '<span class="badge rec">● 녹화 중</span>' : ''}
         <span class="spec">${escapeHtml(s.camera)} · ${s.width}×${s.height} · ${s.fps}fps · ${s.bitrate}kbps</span>
+        <label class="check small"><input type="checkbox" data-record="${escapeHtml(s.name)}" ${s.record ? 'checked' : ''}> 녹화</label>
         <button type="button" class="danger" data-stop="${escapeHtml(s.name)}">중지</button>
       </div>
       ${urls}
@@ -156,11 +132,11 @@ function nextStreamName(streams) {
   return `cam${i}`;
 }
 
-$('#streams').addEventListener('click', async (e) => {
+async function onListClick(e) {
   const { stop, copy } = e.target.dataset;
   if (stop) {
     await api('DELETE', `/api/streams/${encodeURIComponent(stop)}`);
-    await refreshStreams();
+    await refresh();
   } else if (copy) {
     // clipboard API 는 localhost/HTTPS 에서만 동작하므로, 실패하면 입력칸을 선택해 수동 복사하게 한다.
     try {
@@ -171,11 +147,18 @@ $('#streams').addEventListener('click', async (e) => {
       e.target.previousElementSibling.select();
     }
   }
-});
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
-// 이미 로그인된 세션이면 바로 메인 화면으로.
-fetch('/api/streams').then((res) => (res.ok ? showMain() : showLogin()));
+async function onListChange(e) {
+  const name = e.target.dataset.record;
+  if (!name) return;
+  e.target.disabled = true;
+  try {
+    await api('PATCH', `/api/streams/${encodeURIComponent(name)}`, { record: e.target.checked });
+  } catch (err) {
+    alert(err.message);
+  }
+  // 실패 시 서버 상태가 그대로라 HTML 이 같아 다시 그려지지 않으므로 캐시를 비워 체크 상태를 되돌린다.
+  $('#streams').dataset.html = '';
+  await refresh();
+}

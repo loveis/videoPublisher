@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 미디어 송출기 관리 화면: 로그인, 송출 설정, 송출 목록(URL/접속자 수) -->
+<!-- 미디어 송출기 관리 화면: 로그인 + 탭(송출/세션/녹화/설정/서버 정보) 뼈대 -->
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -21,10 +21,19 @@
   <section id="main-view" hidden>
     <header class="topbar">
       <h1>미디어 송출기</h1>
+      <nav class="tabs" id="tabs">
+        <button data-tab="streams" class="active">송출</button>
+        <button data-tab="sessions">세션</button>
+        <button data-tab="recordings">녹화</button>
+        <button data-tab="settings">설정</button>
+        <button data-tab="info">서버 정보</button>
+      </nav>
       <button id="logout" class="ghost">로그아웃</button>
     </header>
+    <p class="banner" id="mtx-banner" hidden></p>
 
-    <main class="layout">
+    <!-- 송출 -->
+    <main class="layout" data-panel="streams">
       <form id="stream-form" class="card">
         <h2>새 송출</h2>
         <label>카메라
@@ -50,21 +59,79 @@
         </label>
         <label>스트림 이름 <input name="streamName" pattern="[A-Za-z0-9_\-]{1,32}" placeholder="cam1"></label>
         <fieldset>
-          <legend>송출 프로토콜</legend>
-          <label class="check"><input type="checkbox" name="protocols" value="rtsp" checked> RTSP</label>
-          <label class="check"><input type="checkbox" name="protocols" value="webrtc"> WebRTC</label>
+          <legend>시청 프로토콜</legend>
+          <div id="protocol-checks" class="checks"></div>
         </fieldset>
+        <label class="check"><input type="checkbox" name="record"> 녹화</label>
         <p class="error" id="stream-error"></p>
         <button type="submit" class="primary" id="start-btn">송출 시작</button>
       </form>
 
       <section class="card">
         <h2>송출 목록</h2>
-        <div id="streams"><p class="muted">송출 중인 스트림이 없습니다.</p></div>
+        <div id="streams"></div>
+      </section>
+    </main>
+
+    <!-- 세션 -->
+    <main class="page" data-panel="sessions" hidden>
+      <section class="card">
+        <h2>접속 세션 <span class="muted" id="session-summary"></span></h2>
+        <div class="table-wrap"><table id="session-table"></table></div>
+      </section>
+    </main>
+
+    <!-- 녹화 -->
+    <main class="page" data-panel="recordings" hidden>
+      <section class="card">
+        <h2>녹화 파일</h2>
+        <p class="muted" id="recording-note"></p>
+        <div id="recording-list"></div>
+      </section>
+    </main>
+
+    <!-- 설정 -->
+    <main class="page" data-panel="settings" hidden>
+      <section class="card">
+        <div class="settings-head">
+          <h2>MediaMTX 설정</h2>
+          <nav class="subtabs" id="settings-tabs">
+            <button data-mode="main" class="active">주요 설정</button>
+            <button data-mode="advanced">고급 (전체 항목)</button>
+          </nav>
+        </div>
+        <p class="notice">
+          저장하면 MediaMTX 에 즉시 반영되고 <code>mediamtx.yml</code> 에 기록됩니다.
+          포트·프로토콜·암호화를 바꾸면 해당 서버가 재시작되어 진행 중인 송출·시청이 끊길 수 있습니다.
+          적용에 실패하면(예: 이미 사용 중인 포트) 저장하지 않고 이전 설정으로 복구합니다.
+        </p>
+        <input id="settings-filter" class="filter" placeholder="항목 검색 (예: hls, record, Address)" hidden>
+        <div id="settings-body"></div>
+      </section>
+    </main>
+
+    <!-- 서버 정보 -->
+    <main class="page" data-panel="info" hidden>
+      <section class="card" id="info-summary"></section>
+      <section class="card">
+        <h2>프로토콜 서버</h2>
+        <div class="table-wrap"><table id="info-servers"></table></div>
+      </section>
+      <section class="card">
+        <h2>경로 (스트림)</h2>
+        <div class="table-wrap"><table id="info-paths"></table></div>
+      </section>
+      <section class="card">
+        <h2>메트릭 (Prometheus)</h2>
+        <div class="row">
+          <button type="button" id="load-metrics">불러오기</button>
+          <input id="metrics-filter" class="filter" placeholder="필터 (예: paths, bytes)">
+        </div>
+        <pre id="metrics"></pre>
       </section>
     </main>
   </section>
 
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

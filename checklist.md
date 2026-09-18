@@ -29,14 +29,14 @@ PC 카메라(dshow)를 FFmpeg로 H.264 인코딩 → MediaMTX로 publish → RTS
 - UI 탭: 송출 / 세션 / 녹화 / 설정(주요·고급) / 서버 정보.
 
 ### Tasks
-- [ ] mediamtx.example.yml 분리, yml 로딩/저장 모듈(yaml), .env 포트 제거, 이 PC 의 yml 에 1xxxx 포트 이관
-- [ ] MediaMTX API 인증 프록시 + 설정 patch 시 yml 저장
-- [ ] 스트림별 전체 프로토콜 URL(RTSP/RTSPS/RTMP/RTMPS/HLS/WebRTC/SRT) + 프로토콜별 접속자 수
-- [ ] 스트림별 녹화 on/off
-- [ ] UI 탭 구조 + 송출 탭 갱신
-- [ ] 세션 탭: 프로토콜별 세션 목록 + 강제 종료
-- [ ] 녹화 탭: 녹화 목록, 다운로드(playback), 삭제
-- [ ] 설정 탭: 주요 항목(한글 설명) + 고급(전체 자동 폼)
-- [ ] 서버 정보 탭: 버전/가동시간/통계 + 메트릭
-- [ ] 단위 테스트(URL 계산, 포트 파싱) + E2E 검증
-- [ ] README / context-notes 갱신
+- [x] mediamtx.example.yml 분리, yml 로딩/저장 모듈(yaml), .env 포트 제거, 이 PC 의 yml 에 1xxxx 포트 이관
+- [x] MediaMTX API 인증 프록시 + 설정 patch 시 yml 저장
+- [x] 스트림별 전체 프로토콜 URL(RTSP/RTSPS/RTMP/RTMPS/HLS/WebRTC/SRT) + 프로토콜별 접속자 수
+- [x] 스트림별 녹화 on/off
+- [x] UI 탭 구조 + 송출 탭 갱신
+- [x] 세션 탭: 프로토콜별 세션 목록 + 강제 종료
+- [x] 녹화 탭: 녹화 목록, 다운로드(playback), 삭제
+- [x] 설정 탭: 주요 항목(한글 설명) + 고급(전체 자동 폼)
+- [x] 서버 정보 탭: 버전/가동시간/통계 + 메트릭
+- [x] 단위 테스트(URL 계산, 포트 파싱) + E2E 검증
+- [x] README / context-notes 갱신

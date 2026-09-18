@@ -57,3 +57,14 @@
   → 스트림별 경로 설정도 yml `paths.<name>` 에 함께 기록하고, 송출 중지 시 제거.
 - 송출 중 경로 설정 추가/변경(record on/off)은 publisher 연결을 끊지 않음.
 - 보호 항목: api, apiAddress(관리 서버가 사용), rtsp 와 rtspEncryption=strict(FFmpeg 가 RTSP 로 publish) → UI 에서 변경 불가.
+
+### 2차 구현 결과 / 검증
+- UI 는 탭별 ES 모듈(public/js/*.js)로 분리. 설정 탭만 폴링하지 않음(편집 중 값 보호).
+- 주요 설정 스키마: public/js/config-schema.js. 고급 폼은 값 타입으로 입력 형식 추론(bool/number/list/json/text).
+- 녹화 목록은 playback 서버 /list 의 구간(연속 세그먼트 묶음) 단위로 다운로드, 삭제는 구간에 속한 세그먼트를 API 로 삭제.
+- E2E(puppeteer, 실제 카메라): 5개 프로토콜 동시 시청 시 각 1명 표시, 세션 5개(이 앱 publisher 표시) + RTMP 킥,
+  송출 중 녹화 끄기(송출 유지), 녹화 다운로드(MP4)·삭제, 설정 저장 → yml 반영(주석 유지),
+  hlsAddress :8888(도커 점유) → 롤백 메시지 + yml 미변경 + 3초 뒤 복구, 고급 174개 항목·검색, 메트릭 on → 조회.
+- 롤백으로 MediaMTX 가 재시작되면 FFmpeg publisher 도 끊겨 스트림이 '오류'가 됨 → 자동 재송출은 아직 없음(후속 후보).
+- MediaMTX 재시작 중 API 호출은 ECONNREFUSED → 503 + 안내 메시지(로그 생략).
+- yaml 라이브러리는 flow 배열을 `[ a, b ]` 형태로, yes/no 를 true/false 로 다시 씀(의미 동일).

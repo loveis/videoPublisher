@@ -221,10 +221,12 @@ app.all('/api/mtx/*path', async (req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  // MediaMTX 가 재시작 중이면 fetch 자체가 실패한다. 예상된 상황이라 로그를 남기지 않는다.
+  if (err.cause?.code === 'ECONNREFUSED') {
+    return res.status(503).json({ error: 'MediaMTX 에 연결할 수 없습니다(재시작 중일 수 있음). 잠시 후 다시 시도하세요.' });
+  }
   if (!(err instanceof MtxError)) console.error(err);
-  // MediaMTX 가 재시작 중이면 fetch 자체가 실패한다.
-  const message = err.cause?.code === 'ECONNREFUSED' ? 'MediaMTX 에 연결할 수 없습니다(재시작 중일 수 있음).' : err.message;
-  res.status(err.status ?? 500).json({ error: message });
+  res.status(err.status ?? 500).json({ error: err.message });
 });
 
 startMediaMtx();
