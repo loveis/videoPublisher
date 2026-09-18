@@ -7,8 +7,8 @@ import { listCameras, getCameraOptions } from './devices.js';
 import { startMediaMtx, stopMediaMtx, getPathStats, RTSP_PORT, WEBRTC_PORT } from './mediamtx.js';
 import { startStream, stopStream, stopAll, listStreams } from './streamer.js';
 
-const PORT = Number(process.env.PORT ?? 8080);
-const ADMIN = { username: 'admin', password: 'admin' };
+const PORT = Number(process.env.PORT || 8080);
+const ADMIN = { username: process.env.ADMIN_USERNAME || 'admin', password: process.env.ADMIN_PASSWORD || 'admin' };
 const PROTOCOLS = ['rtsp', 'webrtc'];
 const sessions = new Set();
 
@@ -114,7 +114,7 @@ app.use((err, req, res, next) => {
 
 startMediaMtx();
 app.listen(PORT, () => {
-  console.log(`관리 화면: http://localhost:${PORT}  (admin / admin)`);
+  console.log(`관리 화면: http://localhost:${PORT}`);
   console.log(`송출 URL 호스트: ${publicHost()}`);
 });
 

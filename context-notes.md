@@ -29,3 +29,10 @@
   접속자 1명 표시 → 중지까지 확인. headless 에서 백그라운드 탭 타이머가 멈춰 UI 반영이 늦을 수 있어 테스트는 API 로 교차 확인.
 - 링크 로컬(169.254.x) 주소도 URL 호스트 자동 감지에서 제외.
 - MediaMTX 가 실행 폴더에 MoQ 용 auto.crt/auto.key 를 생성 → .gitignore.
+
+## 2026-09-18 설정 파일 분리
+- 설정은 `.env`(Git 제외) + `.env.example`(커밋). Node 내장 `--env-file-if-exists` 로 로딩해 dotenv 의존성 없음 → Node 22.9+ 필요.
+- 관리자 계정도 `ADMIN_USERNAME`/`ADMIN_PASSWORD` 로 분리(기본 admin/admin).
+- `.env` 에 빈 값(`PORT=`)이 오면 기본값을 쓰도록 `??` 대신 `||` 사용.
+- 이 PC 의 `.env` 는 sa-dev MediaMTX 도커와의 충돌을 피해 1xxxx 포트로 설정해 둠.
+- MediaMTX 의 RTP/RTCP(8000/8001 UDP), MoQ(8892/8893) 포트는 설정 대상에 넣지 않음(현재 충돌 없음).

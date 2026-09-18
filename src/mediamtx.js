@@ -2,11 +2,11 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-// 포트는 환경변수로 바꿀 수 있고, MediaMTX 에는 MTX_* 환경변수로 mediamtx.yml 값을 덮어써 전달한다.
-export const RTSP_PORT = Number(process.env.RTSP_PORT ?? 8554);
-export const WEBRTC_PORT = Number(process.env.WEBRTC_PORT ?? 8889);
-const WEBRTC_UDP_PORT = Number(process.env.WEBRTC_UDP_PORT ?? 8189);
-const API_PORT = Number(process.env.MEDIAMTX_API_PORT ?? 9997);
+// 포트는 환경변수(.env)로 바꿀 수 있고(빈 값이면 기본값), MediaMTX 에는 MTX_* 환경변수로 mediamtx.yml 값을 덮어써 전달한다.
+export const RTSP_PORT = Number(process.env.RTSP_PORT || 8554);
+export const WEBRTC_PORT = Number(process.env.WEBRTC_PORT || 8889);
+const WEBRTC_UDP_PORT = Number(process.env.WEBRTC_UDP_PORT || 8189);
+const API_PORT = Number(process.env.MEDIAMTX_API_PORT || 9997);
 const API = `http://127.0.0.1:${API_PORT}`;
 
 // MediaMTX reader type → UI 프로토콜 키

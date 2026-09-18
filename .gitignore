@@ -3,3 +3,4 @@ bin/
 .omc/
 auto.crt
 auto.key
+.env
