@@ -1,0 +1,70 @@
+<!doctype html>
+<!-- 미디어 송출기 관리 화면: 로그인, 송출 설정, 송출 목록(URL/접속자 수) -->
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>미디어 송출기</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section id="login-view" class="login" hidden>
+    <form id="login-form" class="card login-card">
+      <h1>미디어 송출기</h1>
+      <label>아이디 <input name="username" autocomplete="username" required></label>
+      <label>비밀번호 <input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="error" id="login-error"></p>
+      <button type="submit" class="primary">로그인</button>
+    </form>
+  </section>
+
+  <section id="main-view" hidden>
+    <header class="topbar">
+      <h1>미디어 송출기</h1>
+      <button id="logout" class="ghost">로그아웃</button>
+    </header>
+
+    <main class="layout">
+      <form id="stream-form" class="card">
+        <h2>새 송출</h2>
+        <label>카메라
+          <span class="row">
+            <select name="camera" required></select>
+            <button type="button" id="refresh-cameras" class="ghost" title="카메라 목록 새로고침">↻</button>
+          </span>
+        </label>
+        <div class="grid2">
+          <label>해상도 <select name="resolution" required></select></label>
+          <label>프레임 (fps) <select name="fps" required></select></label>
+        </div>
+        <label>비트레이트
+          <select name="bitrate">
+            <option value="500">500 kbps</option>
+            <option value="1000">1 Mbps</option>
+            <option value="2000" selected>2 Mbps</option>
+            <option value="3000">3 Mbps</option>
+            <option value="4000">4 Mbps</option>
+            <option value="6000">6 Mbps</option>
+            <option value="8000">8 Mbps</option>
+          </select>
+        </label>
+        <label>스트림 이름 <input name="streamName" pattern="[A-Za-z0-9_\-]{1,32}" placeholder="cam1"></label>
+        <fieldset>
+          <legend>송출 프로토콜</legend>
+          <label class="check"><input type="checkbox" name="protocols" value="rtsp" checked> RTSP</label>
+          <label class="check"><input type="checkbox" name="protocols" value="webrtc"> WebRTC</label>
+        </fieldset>
+        <p class="error" id="stream-error"></p>
+        <button type="submit" class="primary" id="start-btn">송출 시작</button>
+      </form>
+
+      <section class="card">
+        <h2>송출 목록</h2>
+        <div id="streams"><p class="muted">송출 중인 스트림이 없습니다.</p></div>
+      </section>
+    </main>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

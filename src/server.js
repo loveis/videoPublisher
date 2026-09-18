@@ -12,12 +12,12 @@ const ADMIN = { username: 'admin', password: 'admin' };
 const PROTOCOLS = ['rtsp', 'webrtc'];
 const sessions = new Set();
 
-// 다른 PC 에서 접속할 URL 의 호스트. Hyper-V/WSL/VM 가상 어댑터는 외부에서 닿지 않으므로 제외.
+// 다른 PC 에서 접속할 URL 의 호스트. Hyper-V/WSL/VM 가상 어댑터와 링크 로컬(169.254.x)은 외부에서 닿지 않으므로 제외.
 function publicHost() {
   if (process.env.PUBLIC_HOST) return process.env.PUBLIC_HOST;
   for (const [ifname, addrs] of Object.entries(os.networkInterfaces())) {
     if (/vEthernet|virtual|vmware|wsl|loopback/i.test(ifname)) continue;
-    const v4 = addrs.find((a) => a.family === 'IPv4' && !a.internal);
+    const v4 = addrs.find((a) => a.family === 'IPv4' && !a.internal && !a.address.startsWith('169.254.'));
     if (v4) return v4.address;
   }
   return 'localhost';

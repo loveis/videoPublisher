@@ -11,8 +11,8 @@ PC 카메라(dshow)를 FFmpeg로 H.264 인코딩 → MediaMTX로 publish → RTS
 - [x] MediaMTX 프로세스 관리 + 접속자 수 조회
 - [x] FFmpeg 송출 프로세스 관리 (시작/중지/상태)
 - [x] Express 서버: 로그인(admin/admin), REST API
-- [ ] 관리 UI (로그인, 송출 설정, 송출 목록, URL, 접속자 수)
-- [ ] 테스트 실행
-- [ ] 실제 카메라로 송출 → RTSP 재생 확인 (ffprobe)
-- [ ] WebRTC 플레이어 페이지 응답 확인
-- [ ] README
+- [x] 관리 UI (로그인, 송출 설정, 송출 목록, URL, 접속자 수)
+- [x] 테스트 실행
+- [x] 실제 카메라로 송출 → RTSP 재생 확인 (ffprobe)
+- [x] WebRTC 플레이어 페이지 응답 확인
+- [x] README

@@ -21,3 +21,11 @@
 - 검증: RTSP(TCP/UDP) 2명 접속 시 rtsp=2, headless Chrome 으로 WebRTC 페이지 접속 시 webrtc=1 확인.
   ffprobe 결과 h264 Constrained Baseline 1280x720 30fps.
 - setup 스크립트: PATH 의 GNU tar(Git Bash)는 zip 을 못 풀어 System32\tar.exe(bsdtar)를 명시 호출.
+
+## 2026-09-18 UI / E2E
+- 관리 UI 는 빌드 없는 정적 HTML/JS(public/). 2초 폴링, 내용이 같으면 다시 그리지 않음(URL 선택/복사 표시 유지).
+- 스트림 이름을 비우면 placeholder 로 제안한 camN 을 사용.
+- E2E(puppeteer-core, scratchpad 에서만 설치): 로그인 실패/성공 → 1080p30 4Mbps 송출 → WebRTC 탭 재생(1920x1080) →
+  접속자 1명 표시 → 중지까지 확인. headless 에서 백그라운드 탭 타이머가 멈춰 UI 반영이 늦을 수 있어 테스트는 API 로 교차 확인.
+- 링크 로컬(169.254.x) 주소도 URL 호스트 자동 감지에서 제외.
+- MediaMTX 가 실행 폴더에 MoQ 용 auto.crt/auto.key 를 생성 → .gitignore.
