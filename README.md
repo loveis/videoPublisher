@@ -10,7 +10,7 @@ PC에 연결된 카메라 영상을 **RTSP / WebRTC** 로 송출하고, 웹 관�
 
 ## 요구 사항
 - Windows 10/11
-- Node.js 22.9 이상 (`.env` 로딩에 `--env-file-if-exists` 사용)
+- Node.js 20.12 이상 (`.env` 로딩에 내장 `process.loadEnvFile` 사용)
 - FFmpeg — PATH 에 `ffmpeg` 가 있어야 하며 libx264 가 포함된 빌드
   - 확인: `ffmpeg -hide_banner -encoders | findstr libx264`
 

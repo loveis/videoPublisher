@@ -1,4 +1,5 @@
 // 관리 웹 서버: admin 로그인, 카메라/옵션 조회, 송출 시작·중지, 송출 URL 과 접속자 수 제공
+import './env.js';
 import express from 'express';
 import crypto from 'node:crypto';
 import os from 'node:os';

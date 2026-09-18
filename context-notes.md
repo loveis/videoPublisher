@@ -36,3 +36,7 @@
 - `.env` 에 빈 값(`PORT=`)이 오면 기본값을 쓰도록 `??` 대신 `||` 사용.
 - 이 PC 의 `.env` 는 sa-dev MediaMTX 도커와의 충돌을 피해 1xxxx 포트로 설정해 둠.
 - MediaMTX 의 RTP/RTCP(8000/8001 UDP), MoQ(8892/8893) 포트는 설정 대상에 넣지 않음(현재 충돌 없음).
+- (수정) `--env-file-if-exists` 는 `npm start` 로 실행할 때만 적용돼, `node src/server.js`/디버거 실행 시 기본 포트 8554 로
+  떠서 bind 오류가 났음. `src/env.js` 에서 `process.loadEnvFile()` 로 프로젝트 루트 .env 를 직접 로딩하고 server.js 첫 import 로 둠.
+  ESM 은 import 를 먼저 평가하므로 server.js 본문에서 로딩하면 mediamtx.js 의 포트 상수가 먼저 계산돼 버림 → 별도 모듈 필요.
+  요구 Node 버전은 20.12+ 로 완화.
