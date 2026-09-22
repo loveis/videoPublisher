@@ -68,3 +68,15 @@
 - 롤백으로 MediaMTX 가 재시작되면 FFmpeg publisher 도 끊겨 스트림이 '오류'가 됨 → 자동 재송출은 아직 없음(후속 후보).
 - MediaMTX 재시작 중 API 호출은 ECONNREFUSED → 503 + 안내 메시지(로그 생략).
 - yaml 라이브러리는 flow 배열을 `[ a, b ]` 형태로, yes/no 를 true/false 로 다시 씀(의미 동일).
+
+## 2026-09-22 3차: VOD
+- MediaMTX 에는 VOD(파일 라이브러리) 기능이 없다. `alwaysAvailable*` 은 소스가 끊겼을 때 재생할 오프라인 영상이라 목적이 다름.
+  → 파일마다 `runOnDemand` 경로를 등록해 시청 요청이 있을 때만 FFmpeg 로 RTSP publish 하는 방식 채택(사용자 결정: on-demand).
+- 결정: 반복 여부는 파일별 선택, 코덱은 자동(H.264 복사 / 그 외 H.264 변환, 오디오는 Opus), 등록은 파일별 수동.
+- MediaMTX 가 runOnDemand 문자열의 따옴표·`$RTSP_PORT`·`$MTX_PATH` 를 처리해 준다(공백 있는 Windows 경로도 확인).
+- 경로 이름: 한글 등은 `_` 로 치환되며 서로 겹칠 수 있어, 글자가 바뀐 경우 원본 경로의 sha1 앞 6자리를 붙여 유일하게 만든다.
+- `-stream_loop -1 -c copy` 는 반복 지점에서 타임스탬프가 되돌아가 FFmpeg 가 dts 경고를 낸다.
+  실제 확인 결과 MediaMTX→WebRTC 재생은 20초 파일을 27초까지 끊김 없이 이어서 재생(문제 없음)했다.
+- 등록 정보는 mediamtx.yml `paths.vod/<이름>` 에 저장 → 재시작 후에도 유지되고, 목록의 원천도 MediaMTX 경로 설정이다.
+- 테스트는 사용자가 앱을 실제로 사용 중이어서(8080/18554/19997 점유) scratchpad/apptest 에 복사본을 만들고
+  포트(2xxxx)·VOD_DIR 을 분리해 진행했다. rtp/rtcp(8000/8001)도 기본값이라 테스트 복사본에서 따로 지정해야 했다.

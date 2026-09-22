@@ -111,3 +111,5 @@ pre#metrics:empty { display: none; }
 .result { font-size: 13px; color: var(--live); white-space: pre-wrap; }
 .result.error { color: var(--danger); }
 @media (max-width: 700px) { .field { grid-template-columns: 1fr; } }
+tr.urls td { padding-top: 0; }
+tr.urls .url-row { margin: 2px 0; max-width: 780px; }

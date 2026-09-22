@@ -2,6 +2,7 @@
 import { api, setUnauthorizedHandler } from './api.js';
 import * as streams from './streams.js';
 import * as sessions from './sessions.js';
+import * as vod from './vod.js';
 import * as recordings from './recordings.js';
 import * as settings from './settings.js';
 import * as info from './info.js';
@@ -11,6 +12,7 @@ const $ = (sel) => document.querySelector(sel);
 const TABS = {
   streams: { mod: streams, poll: true },
   sessions: { mod: sessions, poll: true },
+  vod: { mod: vod, poll: true },
   recordings: { mod: recordings, poll: true },
   settings: { mod: settings, poll: false },
   info: { mod: info, poll: true },

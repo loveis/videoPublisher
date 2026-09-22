@@ -10,6 +10,7 @@ import {
   applyConfig, setPathConfig, removePathConfig, MtxError,
 } from './mediamtx.js';
 import { startStream, stopStream, stopAll, listStreams, updateStream } from './streamer.js';
+import { VOD_DIR, listFiles, probe, listRegistered, register, unregister, toPathName } from './vod.js';
 import { portOf, streamUrls, playbackBase } from './urls.js';
 
 const PORT = Number(process.env.PORT || 8080);
@@ -129,6 +130,48 @@ app.patch('/api/streams/:name', async (req, res) => {
 app.delete('/api/streams/:name', async (req, res) => {
   if (!stopStream(req.params.name)) return res.status(404).json({ error: '송출을 찾을 수 없습니다.' });
   await removePathConfig(req.params.name);
+  res.json({ ok: true });
+});
+
+// ---- VOD (폴더의 미디어 파일) ----
+app.get('/api/vod', async (req, res) => {
+  const [conf, stats, files, registered] = await Promise.all([getGlobalConfig(), getPathStats(), listFiles(), listRegistered()]);
+  const host = publicHost();
+  const byName = new Map(registered.map((r) => [r.name, r]));
+  const items = [];
+  for (const file of files) {
+    const name = toPathName(file);
+    const entry = byName.get(name);
+    byName.delete(name);
+    items.push({
+      file,
+      name,
+      ...(await probe(file)),
+      registered: Boolean(entry),
+      loop: entry?.loop ?? false,
+      missing: false,
+      ready: stats[name]?.ready ?? false,
+      viewers: stats[name]?.viewers ?? {},
+      urls: entry ? streamUrls(name, host, conf) : {},
+    });
+  }
+  // 파일은 없어졌는데 등록만 남아 있는 경로
+  for (const entry of byName.values()) {
+    items.push({ ...entry, file: entry.file, registered: true, missing: true, viewers: {}, urls: {} });
+  }
+  res.json({ dir: VOD_DIR, items: items.sort((a, b) => String(a.file).localeCompare(String(b.file))) });
+});
+
+app.post('/api/vod', async (req, res) => {
+  const { file, loop } = req.body ?? {};
+  // 폴더 밖 경로를 등록하지 못하도록 스캔된 목록에 있는 파일만 받는다.
+  if (!(await listFiles()).includes(file)) return res.status(400).json({ error: '폴더에 없는 파일입니다.' });
+  await register(file, Boolean(loop));
+  res.status(201).json({ ok: true });
+});
+
+app.delete('/api/vod', async (req, res) => {
+  await unregister(req.query.name ?? '');
   res.json({ ok: true });
 });
 

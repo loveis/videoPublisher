@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 미디어 송출기 관리 화면: 로그인 + 탭(송출/세션/녹화/설정/서버 정보) 뼈대 -->
+<!-- 미디어 송출기 관리 화면: 로그인 + 탭(송출/세션/VOD/녹화/설정/서버 정보) 뼈대 -->
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -24,6 +24,7 @@
       <nav class="tabs" id="tabs">
         <button data-tab="streams" class="active">송출</button>
         <button data-tab="sessions">세션</button>
+        <button data-tab="vod">VOD</button>
         <button data-tab="recordings">녹화</button>
         <button data-tab="settings">설정</button>
         <button data-tab="info">서버 정보</button>
@@ -78,6 +79,18 @@
       <section class="card">
         <h2>접속 세션 <span class="muted" id="session-summary"></span></h2>
         <div class="table-wrap"><table id="session-table"></table></div>
+      </section>
+    </main>
+
+    <!-- VOD -->
+    <main class="page" data-panel="vod" hidden>
+      <section class="card">
+        <h2>VOD <span class="muted">폴더의 미디어 파일 송출</span></h2>
+        <p class="muted">
+          미디어 폴더 <code id="vod-dir"></code> 에 파일을 넣고 <b>등록</b>하면 시청 URL 이 생깁니다.
+          시청자가 접속할 때만 재생되고, 아무도 보지 않으면 10초 뒤 멈춥니다. 폴더는 <code>.env</code> 의 <code>VOD_DIR</code> 로 바꿉니다.
+        </p>
+        <div id="vod-list"></div>
       </section>
     </main>
 

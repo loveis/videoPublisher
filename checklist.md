@@ -40,3 +40,14 @@ PC 카메라(dshow)를 FFmpeg로 H.264 인코딩 → MediaMTX로 publish → RTS
 - [x] 서버 정보 탭: 버전/가동시간/통계 + 메트릭
 - [x] 단위 테스트(URL 계산, 포트 파싱) + E2E 검증
 - [x] README / context-notes 갱신
+
+---
+
+## 3차: VOD (폴더 미디어 송출)
+
+- [x] vod.js: 폴더 스캔·ffprobe 분석(캐시)·경로 이름 생성·FFmpeg 명령 조립
+- [x] runOnDemand 로 등록/해제 (mediamtx.yml 에 저장)
+- [x] REST API (/api/vod) 와 폴더 밖 파일 차단
+- [x] VOD 탭 UI (목록, 반복 선택, 등록/해제, URL·접속자)
+- [x] 단위 테스트 + 실제 재생 검증(H.264 복사 / H.265 변환 / 반복 경계)
+- [x] README·context-notes 갱신
