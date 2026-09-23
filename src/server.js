@@ -10,7 +10,7 @@ import {
   applyConfig, setPathConfig, removePathConfig, MtxError,
 } from './mediamtx.js';
 import { startStream, stopStream, stopAll, listStreams, updateStream } from './streamer.js';
-import { VOD_DIR, listFiles, probe, listRegistered, register, unregister, toPathName } from './vod.js';
+import { VOD_DIR, listFiles, probe, listRegistered, register, unregister, toPathName, saveUpload } from './vod.js';
 import { portOf, streamUrls, playbackBase } from './urls.js';
 
 const PORT = Number(process.env.PORT || 8080);
@@ -170,6 +170,13 @@ app.post('/api/vod', async (req, res) => {
   res.status(201).json({ ok: true });
 });
 
+// 업로드는 파일을 PUT 본문 그대로 받는다(멀티파트 파서 없이 스트리밍 저장). 저장 후 바로 시청 경로로 등록한다.
+app.put('/api/vod/upload', async (req, res) => {
+  const file = await saveUpload(req.query.name, req);
+  await register(file, req.query.loop === 'true');
+  res.status(201).json({ ok: true, file });
+});
+
 app.delete('/api/vod', async (req, res) => {
   await unregister(req.query.name ?? '');
   res.json({ ok: true });
@@ -273,10 +280,12 @@ app.use((err, req, res, next) => {
 });
 
 startMediaMtx();
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`관리 화면: http://localhost:${PORT}`);
   console.log(`송출 URL 호스트: ${publicHost()}`);
 });
+// 큰 VOD 파일 업로드가 기본 요청 제한시간(5분)에 걸려 끊기지 않도록 해제한다.
+server.requestTimeout = 0;
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {

@@ -1,5 +1,7 @@
 // VOD: 지정 폴더의 미디어 파일을 스캔·분석하고, 시청 요청이 있을 때만(runOnDemand) FFmpeg 로 송출하는 MediaMTX 경로로 등록
-import { readdir, mkdir, stat } from 'node:fs/promises';
+import { readdir, mkdir, stat, rename, unlink, access } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -9,7 +11,7 @@ import { mtxApi, setPathConfig, removePathConfig, MtxError } from './mediamtx.js
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 export const VOD_DIR = path.resolve(ROOT, process.env.VOD_DIR || 'media');
 export const PATH_PREFIX = 'vod/';
-const MEDIA_EXT = new Set(['.mp4', '.mkv', '.mov', '.m4v', '.ts', '.webm', '.avi', '.flv', '.mp3', '.m4a', '.aac', '.wav']);
+export const MEDIA_EXT = new Set(['.mp4', '.mkv', '.mov', '.m4v', '.ts', '.webm', '.avi', '.flv', '.mp3', '.m4a', '.aac', '.wav']);
 const CLOSE_AFTER = '10s';
 // ffprobe 는 파일당 수백 ms 가 걸려 목록 폴링마다 다시 하지 않도록 크기·수정시각을 키로 캐시한다.
 const probeCache = new Map();
@@ -104,4 +106,34 @@ export async function register(relative, loop) {
 export async function unregister(name) {
   if (!name.startsWith(PATH_PREFIX)) throw new MtxError('VOD 경로가 아닙니다.');
   await removePathConfig(name);
+}
+
+// 업로드한 파일 이름에서 폴더 경로와 제어 문자를 떼고, 파일 이름에 쓸 수 없는 글자는 _ 로 바꾼다.
+export function safeFileName(name) {
+  const withoutControls = [...path.basename(String(name ?? ''))].filter((c) => c.codePointAt(0) >= 32).join('');
+  const base = withoutControls.replace(/[<>:"/\\|?*]/g, '_').trim();
+  if (!base || base.startsWith('.')) throw new MtxError('파일 이름이 올바르지 않습니다.');
+  if (!MEDIA_EXT.has(path.extname(base).toLowerCase())) {
+    throw new MtxError(`지원하지 않는 형식입니다. 가능한 형식: ${[...MEDIA_EXT].join(', ')}`);
+  }
+  return base;
+}
+
+// 큰 파일을 메모리에 담지 않도록 요청 본문을 그대로 디스크로 흘려보낸다.
+// 받는 중에는 .uploading 이름으로 써서 목록에 미완성 파일이 보이지 않게 한다.
+export async function saveUpload(name, stream) {
+  const file = safeFileName(name);
+  const target = path.join(VOD_DIR, file);
+  if (await access(target).then(() => true, () => false)) {
+    throw new MtxError(`이미 같은 이름의 파일이 있습니다: ${file}`);
+  }
+  const temp = `${target}.uploading`;
+  try {
+    await pipeline(stream, createWriteStream(temp));
+  } catch (err) {
+    await unlink(temp).catch(() => {});
+    throw err;
+  }
+  await rename(temp, target);
+  return file;
 }

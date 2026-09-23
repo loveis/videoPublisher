@@ -80,3 +80,12 @@
 - 등록 정보는 mediamtx.yml `paths.vod/<이름>` 에 저장 → 재시작 후에도 유지되고, 목록의 원천도 MediaMTX 경로 설정이다.
 - 테스트는 사용자가 앱을 실제로 사용 중이어서(8080/18554/19997 점유) scratchpad/apptest 에 복사본을 만들고
   포트(2xxxx)·VOD_DIR 을 분리해 진행했다. rtp/rtcp(8000/8001)도 기본값이라 테스트 복사본에서 따로 지정해야 했다.
+
+## 2026-09-23 VOD 업로드
+- 업로드는 multipart 파서(multer 등) 없이 `PUT /api/vod/upload?name=&loop=` 본문을 그대로 디스크로 스트리밍한다(의존성 0, 대용량 메모리 안전).
+  받는 동안 `<이름>.uploading` 으로 쓰고 끝나면 rename → 목록에 미완성 파일이 보이지 않고, 중단되면 임시 파일을 지운다.
+- 진행률 표시 때문에 프론트는 fetch 대신 XHR(`xhr.upload.progress`)을 쓴다. 여러 파일은 순차 업로드.
+- Node 18+ 의 기본 `server.requestTimeout`(5분)에 큰 파일이 걸려 끊기므로 0으로 해제했다.
+- safeFileName: basename 으로 경로 제거 + 제어문자 제거 + 파일명 금지문자 치환. `../../evil.mp4` → `evil.mp4` 로 폴더 안에 저장됨을 확인.
+- 검증: 한글 이름 업로드·자동 등록·재생(h264 copy + opus), 중복 거절, 확장자 거절, 2초 만에 끊은 24MB 업로드의 임시 파일 정리 확인.
+- 주의: python heredoc 으로 JS 정규식(  등)을 써 넣다가 실제 제어문자가 파일에 박혔다. 이스케이프가 섞인 코드는 Write/Edit 도구로 작성할 것.

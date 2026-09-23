@@ -87,9 +87,15 @@
       <section class="card">
         <h2>VOD <span class="muted">폴더의 미디어 파일 송출</span></h2>
         <p class="muted">
-          미디어 폴더 <code id="vod-dir"></code> 에 파일을 넣고 <b>등록</b>하면 시청 URL 이 생깁니다.
+          파일을 <b>업로드</b>하거나 미디어 폴더 <code id="vod-dir"></code> 에 직접 넣고 <b>등록</b>하면 시청 URL 이 생깁니다.
           시청자가 접속할 때만 재생되고, 아무도 보지 않으면 10초 뒤 멈춥니다. 폴더는 <code>.env</code> 의 <code>VOD_DIR</code> 로 바꿉니다.
         </p>
+        <div class="upload" id="vod-drop">
+          <input type="file" id="vod-file" accept="video/*,audio/*" multiple hidden>
+          <p><b>여기에 파일을 끌어다 놓거나</b> <button type="button" id="vod-pick">파일 선택</button> 하면 업로드하고 바로 등록합니다.</p>
+          <label class="check"><input type="checkbox" id="vod-upload-loop"> 업로드한 파일 반복 재생</label>
+        </div>
+        <div id="vod-progress"></div>
         <div id="vod-list"></div>
       </section>
     </main>

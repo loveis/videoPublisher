@@ -51,3 +51,9 @@ PC 카메라(dshow)를 FFmpeg로 H.264 인코딩 → MediaMTX로 publish → RTS
 - [x] VOD 탭 UI (목록, 반복 선택, 등록/해제, URL·접속자)
 - [x] 단위 테스트 + 실제 재생 검증(H.264 복사 / H.265 변환 / 반복 경계)
 - [x] README·context-notes 갱신
+
+### 3차 추가: VOD 업로드
+- [x] PUT 스트리밍 업로드 API(의존성 없이), 파일 이름 검증·중복 거절·중단 시 정리
+- [x] 업로드 후 자동 등록(반복 선택)
+- [x] UI: 끌어다 놓기 + 파일 선택, 진행률, 실패 사유 표시
+- [x] 단위 테스트(safeFileName) + 업로드 E2E

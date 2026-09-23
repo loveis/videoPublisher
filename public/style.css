@@ -113,3 +113,13 @@ pre#metrics:empty { display: none; }
 @media (max-width: 700px) { .field { grid-template-columns: 1fr; } }
 tr.urls td { padding-top: 0; }
 tr.urls .url-row { margin: 2px 0; max-width: 780px; }
+
+/* ---- VOD 업로드 ---- */
+.upload { border: 1px dashed var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+.upload.over { border-color: var(--accent); background: #f2f6ff; }
+.upload p { margin: 0 0 8px; }
+.upload-row { display: grid; grid-template-columns: 1fr 180px 90px; gap: 10px; align-items: center; padding: 5px 2px; font-size: 13px; }
+.upload-row progress { width: 100%; height: 10px; }
+.upload-row .upload-state { text-align: right; color: var(--muted); }
+.upload-row.failed .upload-state { color: var(--danger); text-align: left; grid-column: 1 / -1; }
+@media (max-width: 700px) { .upload-row { grid-template-columns: 1fr; } }

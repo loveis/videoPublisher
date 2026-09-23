@@ -1,10 +1,81 @@
-// VOD 탭: 미디어 폴더의 파일 목록, 시청 경로 등록/해제(반복 여부), 등록된 파일의 시청 URL 과 접속자 수
+// VOD 탭: 파일 업로드, 미디어 폴더의 파일 목록, 시청 경로 등록/해제(반복 여부), 시청 URL 과 접속자 수
 import { api, escapeHtml, formatBytes, formatDuration, setHtml, PROTOCOL_LABEL } from './api.js';
 
 const $ = (sel) => document.querySelector(sel);
 
 export function init() {
   $('#vod-list').addEventListener('click', onClick);
+  $('#vod-pick').addEventListener('click', () => $('#vod-file').click());
+  $('#vod-file').addEventListener('change', (e) => {
+    uploadAll([...e.target.files]);
+    e.target.value = '';
+  });
+  const drop = $('#vod-drop');
+  for (const type of ['dragenter', 'dragover']) {
+    drop.addEventListener(type, (e) => {
+      e.preventDefault();
+      drop.classList.add('over');
+    });
+  }
+  for (const type of ['dragleave', 'drop']) {
+    drop.addEventListener(type, () => drop.classList.remove('over'));
+  }
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadAll([...e.dataTransfer.files]);
+  });
+}
+
+// ---- 업로드 ----
+// 여러 개를 한꺼번에 보내면 서로 느려지므로 하나씩 순서대로 올린다.
+async function uploadAll(files) {
+  for (const file of files) {
+    const row = addProgressRow(file);
+    try {
+      await upload(file, row);
+      row.querySelector('.upload-state').textContent = '완료';
+      setTimeout(() => row.remove(), 3000);
+    } catch (err) {
+      row.classList.add('failed');
+      row.querySelector('.upload-state').textContent = err.message;
+    }
+    await refresh();
+  }
+}
+
+function addProgressRow(file) {
+  const row = document.createElement('div');
+  row.className = 'upload-row';
+  row.innerHTML = `<span class="name">${escapeHtml(file.name)}</span>
+    <progress max="100" value="0"></progress>
+    <span class="upload-state">${formatBytes(file.size)}</span>`;
+  $('#vod-progress').append(row);
+  return row;
+}
+
+// 업로드 진행률을 보려면 fetch 대신 XHR 이 필요하다. 본문은 파일 그대로 보낸다.
+function upload(file, row) {
+  return new Promise((resolve, reject) => {
+    const loop = $('#vod-upload-loop').checked;
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', `/api/vod/upload?name=${encodeURIComponent(file.name)}&loop=${loop}`);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.upload.addEventListener('progress', (e) => {
+      if (!e.lengthComputable) return;
+      row.querySelector('progress').value = (e.loaded / e.total) * 100;
+      row.querySelector('.upload-state').textContent = `${Math.round((e.loaded / e.total) * 100)}%`;
+    });
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 201) return resolve();
+      let error = `HTTP ${xhr.status}`;
+      try {
+        error = JSON.parse(xhr.responseText).error ?? error;
+      } catch {}
+      reject(new Error(error));
+    });
+    xhr.addEventListener('error', () => reject(new Error('업로드 중 연결이 끊겼습니다.')));
+    xhr.send(file);
+  });
 }
 
 export async function refresh() {
@@ -17,7 +88,7 @@ export async function refresh() {
           <thead><tr><th>파일</th><th>길이</th><th>크기</th><th>코덱 / 처리</th><th>상태</th><th></th></tr></thead>
           <tbody>${data.items.map(renderItem).join('')}</tbody>
         </table></div>`
-      : '<p class="muted">폴더에 미디어 파일이 없습니다. 위 경로에 파일을 넣고 새로고침하세요.</p>',
+      : '<p class="muted">아직 미디어 파일이 없습니다. 위에서 업로드하거나 미디어 폴더에 직접 넣으세요.</p>',
   );
 }
 
