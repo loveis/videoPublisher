@@ -1,0 +1,21 @@
+# 클러스터 안에서 이름으로 접근할 때 쓰는 서비스입니다.
+# 파드가 hostNetwork 라 외부에서는 서비스를 거치지 않고 노드 IP:포트로 바로 접속합니다.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediamtx-manager
+  namespace: mediamtx
+  labels:
+    app: mediamtx-manager
+spec:
+  type: ClusterIP
+  selector:
+    app: mediamtx-manager
+  ports:
+    - { name: admin, port: 8080, targetPort: 8080, protocol: TCP }
+    - { name: rtsp, port: 8554, targetPort: 8554, protocol: TCP }
+    - { name: rtmp, port: 1935, targetPort: 1935, protocol: TCP }
+    - { name: hls, port: 8888, targetPort: 8888, protocol: TCP }
+    - { name: webrtc, port: 8889, targetPort: 8889, protocol: TCP }
+    - { name: playback, port: 9996, targetPort: 9996, protocol: TCP }
+    - { name: srt, port: 8890, targetPort: 8890, protocol: UDP }

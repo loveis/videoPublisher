@@ -12,10 +12,12 @@ PC에 연결된 카메라 영상과 폴더에 넣어 둔 미디어 파일(VOD)�
 ```
 
 ## 요구 사항
-- Windows 10/11
+- Windows 10/11 또는 리눅스 (도커 이미지로도 배포할 수 있습니다 → [docker/README.md](docker/README.md))
 - Node.js 20.12 이상 (`.env` 로딩에 내장 `process.loadEnvFile` 사용)
 - FFmpeg — PATH 에 `ffmpeg` 가 있어야 하며 libx264 가 포함된 빌드
   - 확인: `ffmpeg -hide_banner -encoders | findstr libx264`
+- 카메라 송출은 OS 별로 방식이 다릅니다. 윈도우는 DirectShow, 리눅스는 V4L2(`/dev/video*`)를 쓰며
+  리눅스에서는 해상도·프레임 조회에 `v4l-utils`(`v4l2-ctl`)가 필요합니다.
 
 ## 실행 가이드
 
@@ -130,6 +132,17 @@ npm start
 - MoQ 는 설정만 제공하고 시청 URL 은 표시하지 않습니다(실험적 기능).
 - MediaMTX 가 재시작되면(설정 적용 실패 등) 카메라 송출은 자동으로 다시 시작되지 않습니다.
 - VOD 는 실시간 송출이라 시청 중 탐색(seek)이 안 됩니다. 되감기가 필요하면 녹화 탭의 MP4 다운로드를 쓰세요.
+
+## 도커 / 쿠버네티스 배포
+리눅스 서버에는 컨테이너로 올릴 수 있습니다. 이미지 이름은 `loveis/mediamtx-manager` 입니다.
+
+```bash
+docker build -f docker/Dockerfile -t loveis/mediamtx-manager:1.0.0 .   # 저장소 루트에서
+kubectl apply -k k8s/                                                   # 쿠버네티스 배포
+```
+
+- 빌드·실행·환경 변수·볼륨·포트: [docker/README.md](docker/README.md)
+- 쿠버네티스 매니페스트와 배포 절차: [k8s/README.md](k8s/README.md)
 
 ## 테스트
 ```bash

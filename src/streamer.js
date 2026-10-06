@@ -3,13 +3,20 @@ import { spawn } from 'node:child_process';
 
 const streams = new Map();
 
+// 카메라 입력 방식은 OS 마다 다르다. 윈도우는 DirectShow 장치 이름, 리눅스는 V4L2 장치 파일(/dev/videoN).
+function captureArgs({ camera, width, height, fps }, platform) {
+  const size = ['-video_size', `${width}x${height}`, '-framerate', String(fps)];
+  return platform === 'win32'
+    ? ['-f', 'dshow', '-rtbufsize', '256M', ...size, '-i', `video=${camera}`]
+    : ['-f', 'v4l2', ...size, '-i', camera];
+}
+
 // WebRTC 브라우저 호환을 위해 H.264 baseline(B-frame 없음), GOP 2초로 인코딩해 MediaMTX 에 RTSP publish.
-export function buildFfmpegArgs({ camera, width, height, fps, bitrate }, publishUrl) {
+export function buildFfmpegArgs(config, publishUrl, platform = process.platform) {
+  const { fps, bitrate } = config;
   return [
     '-hide_banner', '-loglevel', 'error',
-    '-f', 'dshow', '-rtbufsize', '256M',
-    '-video_size', `${width}x${height}`, '-framerate', String(fps),
-    '-i', `video=${camera}`,
+    ...captureArgs(config, platform),
     '-an',
     '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency',
     '-profile:v', 'baseline', '-pix_fmt', 'yuv420p',

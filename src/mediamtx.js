@@ -1,17 +1,22 @@
 // MediaMTX 프로세스 실행·감시(비정상 종료 시 재시작), API 호출, 설정 적용(API 즉시 반영 후 mediamtx.yml 기록)
 import { spawn } from 'node:child_process';
-import { existsSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, copyFileSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import YAML from 'yaml';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const YML = path.join(ROOT, 'mediamtx.yml');
+// 설정 파일 위치는 환경변수로 바꿀 수 있다(컨테이너에서 설정용 볼륨을 따로 마운트할 때 사용).
+const YML = path.resolve(ROOT, process.env.MEDIAMTX_CONFIG || 'mediamtx.yml');
+const MEDIAMTX_BIN = path.join(ROOT, 'bin', process.platform === 'win32' ? 'mediamtx.exe' : 'mediamtx');
 const RESTART_DELAY_MS = 3000;
 const ALIVE_CHECK_DELAY_MS = 1500;
 
 // mediamtx.yml 은 PC 별 설정(Git 제외). 처음 실행이면 예시 설정을 복사한다.
-if (!existsSync(YML)) copyFileSync(path.join(ROOT, 'mediamtx.example.yml'), YML);
+if (!existsSync(YML)) {
+  mkdirSync(path.dirname(YML), { recursive: true });
+  copyFileSync(path.join(ROOT, 'mediamtx.example.yml'), YML);
+}
 
 // 관리 서버가 호출할 API 주소. apiAddress 는 UI 에서 바꿀 수 없는 보호 항목이라 시작 시 한 번만 읽는다.
 const apiAddress = YAML.parse(readFileSync(YML, 'utf8')).apiAddress ?? '127.0.0.1:9997';
@@ -36,7 +41,7 @@ let lastError = '';
 
 export function startMediaMtx() {
   lastError = '';
-  proc = spawn(path.join(ROOT, 'bin', 'mediamtx.exe'), [YML], { cwd: ROOT, stdio: ['ignore', 'pipe', 'inherit'] });
+  proc = spawn(MEDIAMTX_BIN, [YML], { cwd: ROOT, stdio: ['ignore', 'pipe', 'inherit'] });
   proc.stdout.setEncoding('utf8');
   proc.stdout.on('data', (d) => {
     process.stdout.write(d);

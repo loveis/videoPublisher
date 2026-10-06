@@ -1,0 +1,85 @@
+# 미디어 송출기 배포 — WebRTC·RTSP 의 UDP 를 그대로 쓰기 위해 호스트 네트워크를 사용합니다.
+# 호스트 네트워크 + ReadWriteOnce 볼륨이라 파드는 1개만 띄웁니다(노드의 포트를 직접 점유).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediamtx-manager
+  namespace: mediamtx
+  labels:
+    app: mediamtx-manager
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # 새 파드가 같은 포트·볼륨을 쓰므로 먼저 내리고 띄운다
+  selector:
+    matchLabels:
+      app: mediamtx-manager
+  template:
+    metadata:
+      labels:
+        app: mediamtx-manager
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      # 볼륨이 특정 노드에 묶이거나 카메라가 달린 노드로 보내려면 지정하세요.
+      # nodeSelector:
+      #   kubernetes.io/hostname: worker-1
+      containers:
+        - name: mediamtx-manager
+          image: loveis/mediamtx-manager:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORT
+              value: "8080"
+            # 시청 URL 에 넣을 주소 — 파드가 뜬 노드의 IP 를 그대로 사용합니다.
+            - name: PUBLIC_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          envFrom:
+            - secretRef:
+                name: mediamtx-manager-admin
+          ports: # hostNetwork 라 노드 포트에 그대로 열립니다(아래는 문서용 표기)
+            - { name: admin, containerPort: 8080, protocol: TCP }
+            - { name: rtsp, containerPort: 8554, protocol: TCP }
+            - { name: rtmp, containerPort: 1935, protocol: TCP }
+            - { name: hls, containerPort: 8888, protocol: TCP }
+            - { name: webrtc, containerPort: 8889, protocol: TCP }
+            - { name: playback, containerPort: 9996, protocol: TCP }
+            - { name: rtp, containerPort: 8000, protocol: UDP }
+            - { name: rtcp, containerPort: 8001, protocol: UDP }
+            - { name: webrtc-ice, containerPort: 8189, protocol: UDP }
+            - { name: srt, containerPort: 8890, protocol: UDP }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              # 코덱 변환(H.265→H.264 등)이 일어나면 CPU 를 많이 씁니다. 스트림 수에 맞춰 늘리세요.
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - { name: config, mountPath: /config }
+            - { name: media, mountPath: /media }
+            - { name: recordings, mountPath: /app/recordings }
+            # 카메라를 송출하려면 노드의 비디오 장치를 넣고 privileged 로 실행해야 합니다.
+            # - { name: video0, mountPath: /dev/video0 }
+          # securityContext:
+          #   privileged: true
+      volumes:
+        - name: config
+          persistentVolumeClaim: { claimName: mediamtx-config }
+        - name: media
+          persistentVolumeClaim: { claimName: mediamtx-media }
+        - name: recordings
+          persistentVolumeClaim: { claimName: mediamtx-recordings }
+        # - name: video0
+        #   hostPath: { path: /dev/video0, type: CharDevice }

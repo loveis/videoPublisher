@@ -21,7 +21,7 @@ export function init() {
 async function loadCameras() {
   const cameras = await api('GET', '/api/cameras');
   form.camera.innerHTML = cameras.length
-    ? cameras.map((c) => `<option>${escapeHtml(c.name)}</option>`).join('')
+    ? cameras.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('')
     : '<option value="">카메라 없음</option>';
   await loadOptions();
 }
@@ -30,7 +30,7 @@ async function loadOptions() {
   form.resolution.innerHTML = '<option value="">조회 중…</option>';
   form.fps.innerHTML = '';
   cameraOptions = form.camera.value
-    ? await api('GET', `/api/cameras/${encodeURIComponent(form.camera.value)}/options`)
+    ? await api('GET', `/api/camera-options?id=${encodeURIComponent(form.camera.value)}`)
     : [];
   form.resolution.innerHTML = cameraOptions.length
     ? cameraOptions.map((o, i) => `<option value="${i}">${o.width} × ${o.height}</option>`).join('')
@@ -116,7 +116,7 @@ function renderStream(s) {
         <strong>${escapeHtml(s.name)}</strong>
         <span class="badge ${cls}">${label}</span>
         ${s.record ? '<span class="badge rec">● 녹화 중</span>' : ''}
-        <span class="spec">${escapeHtml(s.camera)} · ${s.width}×${s.height} · ${s.fps}fps · ${s.bitrate}kbps</span>
+        <span class="spec">${escapeHtml(s.cameraName ?? s.camera)} · ${s.width}×${s.height} · ${s.fps}fps · ${s.bitrate}kbps</span>
         <label class="check small"><input type="checkbox" data-record="${escapeHtml(s.name)}" ${s.record ? 'checked' : ''}> 녹화</label>
         <button type="button" class="danger" data-stop="${escapeHtml(s.name)}">중지</button>
       </div>

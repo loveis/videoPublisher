@@ -57,3 +57,15 @@ PC 카메라(dshow)를 FFmpeg로 H.264 인코딩 → MediaMTX로 publish → RTS
 - [x] 업로드 후 자동 등록(반복 선택)
 - [x] UI: 끌어다 놓기 + 파일 선택, 진행률, 실패 사유 표시
 - [x] 단위 테스트(safeFileName) + 업로드 E2E
+
+---
+
+## 4차: 도커 / 쿠버네티스 배포
+
+- [x] 리눅스 카메라(V4L2) 지원 — 장치 목록/옵션 조회, FFmpeg 입력 인자 분기
+- [x] 설정 파일 경로(MEDIAMTX_CONFIG)와 MediaMTX 바이너리 이름 OS 분기
+- [x] docker/Dockerfile (node:22-slim + ffmpeg + v4l-utils + MediaMTX 리눅스 바이너리)
+- [x] docker/docker-compose.yml, docker/README.md (빌드·실행·환경변수·볼륨·포트·푸시)
+- [x] k8s 매니페스트 (namespace/secret/pvc×3/deployment(hostNetwork)/service/kustomization)
+- [x] k8s/README.md (배포 절차, 카메라 장치 연결, 업데이트·롤백, 문제 해결)
+- [x] 단위 테스트 추가(v4l2 파싱, 캡처 인자) + 이미지 빌드·컨테이너 실행 검증

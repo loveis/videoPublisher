@@ -1,0 +1,35 @@
+# 미디어 송출기 실행 예시 — docker compose -f docker/docker-compose.yml up -d
+# 호스트 네트워크는 리눅스 도커에서만 동작합니다. 윈도우/맥 Docker Desktop 에서는 아래 ports 방식을 쓰세요.
+services:
+  mediamtx-manager:
+    image: loveis/mediamtx-manager:1.0.0
+    container_name: mediamtx-manager
+    restart: unless-stopped
+    # WebRTC·RTSP 의 UDP 까지 그대로 쓰려면 호스트 네트워크가 가장 간단합니다.
+    network_mode: host
+    environment:
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: change-me
+      # 비워 두면 서버의 LAN IP 를 자동으로 찾습니다. 시청 URL 의 IP 가 맞지 않으면 직접 적으세요.
+      PUBLIC_HOST: ""
+    volumes:
+      - ./data/config:/config          # mediamtx.yml (설정 탭에서 바꾼 내용)
+      - ./data/media:/media            # VOD 파일
+      - ./data/recordings:/app/recordings
+    # 카메라를 송출하려면 호스트의 비디오 장치를 넘겨 줍니다(장치 번호는 ls /dev/video* 로 확인).
+    # devices:
+    #   - /dev/video0:/dev/video0
+
+    # --- 호스트 네트워크를 못 쓰는 환경(윈도우/맥)에서는 위 network_mode 를 지우고 아래를 사용 ---
+    # ports:
+    #   - "8080:8080"       # 관리 웹
+    #   - "8554:8554"       # RTSP
+    #   - "8000:8000/udp"   # RTP
+    #   - "8001:8001/udp"   # RTCP
+    #   - "1935:1935"       # RTMP
+    #   - "8888:8888"       # HLS
+    #   - "8889:8889"       # WebRTC(HTTP)
+    #   - "8189:8189/udp"   # WebRTC(ICE)
+    #   - "8890:8890/udp"   # SRT
+    #   - "9996:9996"       # 녹화 재생(playback)
+    # environment 에 PUBLIC_HOST 로 호스트 IP 를 반드시 지정하세요(컨테이너 IP 가 잡히면 외부에서 못 봅니다).

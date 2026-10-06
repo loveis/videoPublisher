@@ -1,0 +1,16 @@
+# kubectl apply -k k8s/ 로 한 번에 배포합니다.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mediamtx
+
+resources:
+  - namespace.yaml
+  - secret.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+
+# 다른 태그로 배포할 때는 newTag 만 바꾸면 됩니다.
+images:
+  - name: loveis/mediamtx-manager
+    newTag: 1.0.0

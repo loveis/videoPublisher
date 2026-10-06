@@ -1,0 +1,5 @@
+# 미디어 송출기 전용 네임스페이스
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mediamtx

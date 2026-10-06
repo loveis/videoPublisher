@@ -67,8 +67,9 @@ app.get('/api/cameras', async (req, res) => {
   res.json(await listCameras());
 });
 
-app.get('/api/cameras/:name/options', async (req, res) => {
-  res.json(await getCameraOptions(req.params.name));
+// 카메라 id 는 윈도우에서 장치 이름, 리눅스에서 /dev/videoN 이라 쿼리로 받는다.
+app.get('/api/camera-options', async (req, res) => {
+  res.json(await getCameraOptions(req.query.id ?? ''));
 });
 
 // ---- 송출 ----
@@ -101,7 +102,8 @@ app.post('/api/streams', async (req, res) => {
   const streams = listStreams();
   if (streams.some((s) => s.name === name)) return fail(`'${name}' 이름의 송출이 이미 있습니다.`);
   if (streams.some((s) => s.camera === camera)) return fail('이 카메라는 이미 송출 중입니다.');
-  if (!(await listCameras()).some((c) => c.name === camera)) return fail('존재하지 않는 카메라입니다.');
+  const device = (await listCameras()).find((c) => c.id === camera);
+  if (!device) return fail('존재하지 않는 카메라입니다.');
   const option = (await getCameraOptions(camera)).find((o) => o.width === width && o.height === height);
   if (!option || !option.fps.includes(fps)) return fail('카메라가 지원하지 않는 해상도/프레임입니다.');
   if (!Number.isInteger(bitrate) || bitrate < 100 || bitrate > 20000) return fail('비트레이트는 100~20000 kbps 여야 합니다.');
@@ -113,7 +115,10 @@ app.post('/api/streams', async (req, res) => {
 
   if (record) await setPathConfig(name, { record: true });
   const publishUrl = `rtsp://127.0.0.1:${portOf(conf.rtspAddress)}/${name}`;
-  startStream({ name, camera, width, height, fps, bitrate, protocols, record: Boolean(record) }, publishUrl);
+  startStream(
+    { name, camera, cameraName: device.name, width, height, fps, bitrate, protocols, record: Boolean(record) },
+    publishUrl,
+  );
   res.status(201).json({ ok: true });
 });
 
@@ -286,6 +291,12 @@ const server = app.listen(PORT, () => {
 });
 // 큰 VOD 파일 업로드가 기본 요청 제한시간(5분)에 걸려 끊기지 않도록 해제한다.
 server.requestTimeout = 0;
+// 포트가 이미 쓰이거나 OS 가 예약한 범위면 조용히 안 열리므로 이유를 남기고 종료한다.
+server.on('error', (err) => {
+  console.error(`관리 웹 서버를 ${PORT} 포트로 열 수 없습니다: ${err.code ?? err.message}`);
+  stopMediaMtx();
+  process.exit(1);
+});
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {

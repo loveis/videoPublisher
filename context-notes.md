@@ -89,3 +89,16 @@
 - safeFileName: basename 으로 경로 제거 + 제어문자 제거 + 파일명 금지문자 치환. `../../evil.mp4` → `evil.mp4` 로 폴더 안에 저장됨을 확인.
 - 검증: 한글 이름 업로드·자동 등록·재생(h264 copy + opus), 중복 거절, 확장자 거절, 2초 만에 끊은 24MB 업로드의 임시 파일 정리 확인.
 - 주의: python heredoc 으로 JS 정규식(  등)을 써 넣다가 실제 제어문자가 파일에 박혔다. 이스케이프가 섞인 코드는 Write/Edit 도구로 작성할 것.
+
+## 2026-10-06 4차: 도커/쿠버 배포 (사용자 결정)
+- 이미지 이름 `loveis/mediamtx-manager` — 도커 저장소 이름은 대문자를 허용하지 않아 요청하신 `loveis/mediaMTXManager` 는 쓸 수 없다.
+- 카메라는 OS 별로 분기: 윈도우 dshow(장치 이름), 리눅스 v4l2(/dev/videoN).
+  목록은 /sys/class/video4linux 에서 읽고, 해상도·프레임은 `v4l2-ctl --list-formats-ext` 를 파싱한다(이미지에 v4l-utils 포함).
+  카메라 식별자가 OS 마다 달라 API 가 { id, name } 을 돌려주도록 바꿨다(기존 /api/cameras/:name/options → /api/camera-options?id=).
+- `MEDIAMTX_CONFIG` 로 설정 파일 위치를 옮길 수 있게 해 컨테이너에서 /config 볼륨을 쓴다. 바이너리 이름도 OS 분기(mediamtx / mediamtx.exe).
+- 쿠버는 hostNetwork + PVC 3개(설정/VOD/녹화), replicas 1 + Recreate. PUBLIC_HOST 는 downward API(status.hostIP)로 노드 IP 를 넣는다.
+- 검증: 이미지 빌드 → 컨테이너 실행(healthy) → 로그인·VOD 업로드·자동 등록·RTSP 재생(h264+opus)·설정 저장(/config 볼륨) →
+  컨테이너 재시작 후 설정과 VOD 등록 유지 확인. 카메라 장치가 없으면 목록이 빈 배열로 정상 처리됨.
+  k8s 는 `kubectl kustomize` 로 렌더링만 검증(사용자 클러스터에 배포하지 않음).
+- 도중 알게 된 것: 윈도우는 8081~8280 등을 예약(netsh interface ipv4 show excludedportrange)해 8099 바인딩이 EACCES 로 실패했다.
+  listen 에러 핸들러가 없어 "열렸다"는 로그만 찍히고 조용히 죽어 있었어서, server.on('error') 로 이유를 남기고 종료하도록 고쳤다.

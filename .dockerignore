@@ -1,0 +1,14 @@
+node_modules
+bin
+media
+recordings
+.env
+mediamtx.yml
+auto.crt
+auto.key
+.git
+.omc
+test
+docker
+k8s
+*.md

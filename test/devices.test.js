@@ -1,7 +1,7 @@
-// dshow 출력 파싱(카메라 목록, 해상도/프레임 옵션) 단위 테스트
+// 카메라 장치 조회 출력 파싱(윈도우 dshow, 리눅스 v4l2) 단위 테스트
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDeviceList, parseOptions } from '../src/devices.js';
+import { parseDeviceList, parseOptions, parseV4l2Options } from '../src/devices.js';
 
 test('parseDeviceList 는 video 장치만 추출한다', () => {
   const text = [
@@ -12,7 +12,10 @@ test('parseDeviceList 는 video 장치만 추출한다', () => {
     '[dshow @ 0000] "마이크(Realtek(R) Audio)" (audio)',
     'Error opening input file dummy.',
   ].join('\r\n');
-  assert.deepEqual(parseDeviceList(text), [{ name: 'Live Streamer CAM 313' }, { name: 'HD Webcam' }]);
+  assert.deepEqual(parseDeviceList(text), [
+    { id: 'Live Streamer CAM 313', name: 'Live Streamer CAM 313' },
+    { id: 'HD Webcam', name: 'HD Webcam' },
+  ]);
 });
 
 test('parseOptions 는 해상도별로 프레임을 묶고 큰 해상도부터 정렬한다', () => {
@@ -35,4 +38,29 @@ test('parseOptions 는 프레임 범위를 일반적인 값으로 펼치고 소�
 
 test('parseOptions 는 옵션이 없으면 빈 배열을 돌려준다', () => {
   assert.deepEqual(parseOptions('Error opening input file video=HD Webcam.'), []);
+});
+
+test('parseV4l2Options 는 해상도별 프레임을 모으고 큰 해상도부터 정렬한다', () => {
+  const text = [
+    'ioctl: VIDIOC_ENUM_FMT',
+    "	Type: Video Capture",
+    '',
+    "	[0]: 'YUYV' (YUYV 4:2:2)",
+    '		Size: Discrete 640x480',
+    '			Interval: Discrete 0.033s (30.000 fps)',
+    '			Interval: Discrete 0.067s (15.000 fps)',
+    '		Size: Discrete 1280x720',
+    '			Interval: Discrete 0.100s (10.000 fps)',
+    "	[1]: 'MJPG' (Motion-JPEG, compressed)",
+    '		Size: Discrete 1280x720',
+    '			Interval: Discrete 0.033s (30.000 fps)',
+  ].join('\n');
+  assert.deepEqual(parseV4l2Options(text), [
+    { width: 1280, height: 720, fps: [30, 10] },
+    { width: 640, height: 480, fps: [30, 15] },
+  ]);
+});
+
+test('parseV4l2Options 는 형식 정보가 없으면 빈 배열을 돌려준다', () => {
+  assert.deepEqual(parseV4l2Options('Cannot open device /dev/video0, exiting.'), []);
 });
